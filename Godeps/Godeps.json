@@ -1,0 +1,113 @@
+{
+	"ImportPath": "github.com/Humio/cf-firehose-to-humio",
+	"GoVersion": "go1.9",
+	"GodepVersion": "v79",
+	"Deps": [
+		{
+			"ImportPath": "code.cloudfoundry.org/lager",
+			"Rev": "0bfa98e49e7a976af91e918d47978f07c00b081f"
+		},
+		{
+			"ImportPath": "github.com/alecthomas/template",
+			"Rev": "a0175ee3bccc567396460bf5acd36800cb10c49c"
+		},
+		{
+			"ImportPath": "github.com/alecthomas/template/parse",
+			"Rev": "a0175ee3bccc567396460bf5acd36800cb10c49c"
+		},
+		{
+			"ImportPath": "github.com/alecthomas/units",
+			"Rev": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry-community/go-cfclient",
+			"Rev": "62a4f5f80d3f4aa6ab5f401af63710bedc8a9089"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/noaa",
+			"Comment": "v2.1.0-3-g7704643",
+			"Rev": "7704643fe84d8b7cb7e3185031cfa3d5caa51c62"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/noaa/consumer",
+			"Comment": "v2.1.0-3-g7704643",
+			"Rev": "7704643fe84d8b7cb7e3185031cfa3d5caa51c62"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
+			"Comment": "v2.1.0-3-g7704643",
+			"Rev": "7704643fe84d8b7cb7e3185031cfa3d5caa51c62"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/noaa/errors",
+			"Comment": "v2.1.0-3-g7704643",
+			"Rev": "7704643fe84d8b7cb7e3185031cfa3d5caa51c62"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/sonde-go/events",
+			"Rev": "c48c4f0332609a0e402af4ae31595204c9f7b363"
+		},
+		{
+			"ImportPath": "github.com/gogo/protobuf/gogoproto",
+			"Comment": "v0.5-6-g0c5dcd73",
+			"Rev": "0c5dcd73e6fd1ac6c452a68ec7f8d463d111be66"
+		},
+		{
+			"ImportPath": "github.com/gogo/protobuf/proto",
+			"Comment": "v0.5-6-g0c5dcd73",
+			"Rev": "0c5dcd73e6fd1ac6c452a68ec7f8d463d111be66"
+		},
+		{
+			"ImportPath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"Comment": "v0.5-6-g0c5dcd73",
+			"Rev": "0c5dcd73e6fd1ac6c452a68ec7f8d463d111be66"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Comment": "v1.2.0-12-g71fa72d",
+			"Rev": "71fa72d4842364bc5f74185f4161e0099ea3624a"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson",
+			"Rev": "3fd5e860b68f3cc81671ece2e226c78a6bbf54d3"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/buffer",
+			"Rev": "3fd5e860b68f3cc81671ece2e226c78a6bbf54d3"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/jlexer",
+			"Rev": "3fd5e860b68f3cc81671ece2e226c78a6bbf54d3"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/jwriter",
+			"Rev": "3fd5e860b68f3cc81671ece2e226c78a6bbf54d3"
+		},
+		{
+			"ImportPath": "github.com/pkg/errors",
+			"Comment": "v0.8.0-7-gf15c970",
+			"Rev": "f15c970de5b76fac0b59abb32d62c17cc7bed265"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "c73622c77280266305273cb545f54516ced95b93"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "bb50c06baba3d0c76f9d125c0719093e315b5b44"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/clientcredentials",
+			"Rev": "bb50c06baba3d0c76f9d125c0719093e315b5b44"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/internal",
+			"Rev": "bb50c06baba3d0c76f9d125c0719093e315b5b44"
+		},
+		{
+			"ImportPath": "gopkg.in/alecthomas/kingpin.v2",
+			"Comment": "v2.2.5",
+			"Rev": "1087e65c9441605df944fb12c33f0fe7072d18ca"
+		}
+	]
+}
