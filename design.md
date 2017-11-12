@@ -2,13 +2,13 @@
 
 The `cloudfoundry2humio` project provides a logging bridge between a Cloud Native application running on Pivotal Cloud Foundry to Humio.
 
-## Package Organisation
+## Module Organisation
 
-This codebase is organised across two main packages:
+This codebase is organised across two main modules:
 
-* `humio` is the directory/package that contains the functions to push events to Humio. It simply does so via a HTTP POST call (using `gorequest̀`). The `events.go` module contains the functions to map PCF events to Humio events format.
+* `humio` is the directory/module that contains the functions to push events to Humio. It simply does so via a HTTP POST call (using `gorequest̀`). The `events.go` module contains the functions to map PCF events to Humio events format.
 
-* `nozzle` is the directory/package that contains two concerns: the firehose client (that's the websocket client to the PCF event hose, it relies on the PCF `noaa` library) and the `nozzle` functions that consume from the firehose, map events to an acceptable Humio format and then push those events to Humio (using the `humio` package as previously described). It also listens to signals (such as SIGINT/Ctrl-C) to stop the nozzle app. _Note_: Events aren't buffered until either the buffer reaches 500 events or 5s have passed since the last push.
+* `nozzle` is the directory/module that contains two concerns: the firehose client (that's the websocket client to the PCF event hose, it relies on the PCF `noaa` library) and the `nozzle` functions that consume from the firehose, map events to an acceptable Humio format and then push those events to Humio (using the `humio` module as previously described). It also listens to signals (such as SIGINT/Ctrl-C) to stop the nozzle app. _Note_: Events aren't buffered until either the buffer reaches 500 events or 5s have passed since the last push.
 
 ## Extending for new Events
 
