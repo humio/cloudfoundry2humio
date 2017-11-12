@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	"github.com/cloudfoundry-community/go-cfclient"
 )
 
 type AppInfo struct {
@@ -69,7 +69,7 @@ func (c *Caching) Initialize() {
 			lager.Data{"info": appInfo})
 	}
 
-	c.logger.Info("Cache initialize completed",
+	c.logger.Debug("Cache initialize completed",
 		lager.Data{"cache size": len(c.appInfosByGuid)})
 }
 
@@ -84,7 +84,7 @@ func (c *Caching) GetAppInfo(appGuid string) AppInfo {
 	if ok {
 		return appInfo
 	} else {
-		c.logger.Info("App info not found for GUID",
+		c.logger.Debug("App info not found for GUID",
 			lager.Data{"guid": appGuid})
 		// call the client api to get the name for this app
 		// purposely create a new client due to issue in using a single client
@@ -141,7 +141,7 @@ func (c *Caching) setInstanceName() error {
 	} else {
 		c.instanceName = fmt.Sprintf("pid-%d@%s", os.Getpid(), hostName)
 	}
-	c.logger.Info("getting nozzle instance name", lager.Data{"name": c.instanceName})
+	c.logger.Debug("getting nozzle instance name", lager.Data{"name": c.instanceName})
 	return err
 }
 

@@ -1,32 +1,45 @@
-# Humio Nozzle For Cloud Foundry
+# Cloud Foundry 2 Humio
 
-This is the Cloud Foundry Nozzle to drain logs from a Cloud Foundry system
-and forward them to Humio over their ElasticSearch endpoint.
+This project contains two components:
 
-## Prerequisites
+- A [Cloud Foundry](https://www.cloudfoundry.org/) [nozzle](https://docs.pivotal.io/tiledev/nozzle.html) for pushing logs to Humio
+- A [Cloud Foundry](https://www.cloudfoundry.org/) Tile so that Humio can be accessed from the Pivotal Marketplace
 
-### Environment
+# Cloud Foundry Nozzle
 
-This nozzle expects that your environment is properly set:
+The [Cloud Foundry](https://www.cloudfoundry.org/)
+[nozzle](https://docs.pivotal.io/tiledev/nozzle.html) drains logs from a
+Cloud Foundry system and forwards them to [Humio](https://humio.com/) over the
+[Elastic Search bulk](https://go.humio.com/docs/integrations/log-shippers/others/index.html#elasticsearch-bulk-api)
+endpoint integration.
+
+Please note that of all the 
+[available Cloud Foundry events](https://github.com/cloudfoundry/dropsonde-protocol/tree/master/events),
+only the HTTP start/stop and application log messages are forwarded to Humio.
+Application's failures and metrics are not currently sent.
+
+## Prepare your Cloud Foundry Environment for the Nozzle
+
+### Requirements
+
+This nozzle requires your environment to have the following available:
 
 * a Cloud Foundry installation
 * an admin user on that environment
 * the [CF cli](https://github.com/cloudfoundry/cli)
 * the [uaac cli](https://github.com/cloudfoundry/cf-uaac)
 
-For simple test, you may want to install [PCFDev](https://pivotal.io/pcf-dev)
-locally.
+### Production Cloud Foundry Deployment
 
-### Deploy - Push the Nozzle as an App to Cloud Foundry
+These instuctions work against a production Cloud Foundry deployment for which
+you must have administrative scope. If you do not have access to such an environment you can install [PCFDev](https://pivotal.io/pcf-dev) locally and follow the
+separate instructions below in this README that specifically work with [PCFDev](https://pivotal.io/pcf-dev).
 
-#### 1. Use the CF CLI to authenticate with your CF instance
-```
-$ cf login -a https://api.${ENDPOINT} -u ${CF_USER} --skip-ssl-validation
-```
+#### Setup a firehose user
 
-#### 2. Create a CF user and grant required privileges
 The nozzle requires a CF user who is authorized to access the loggregator
-firehose, e.g. with the `doppler.firehose` scope.
+firehose through the `doppler.firehose` scope. It is best to have a dedicated
+user for this access.
 
 ```
 $ uaac target https://uaa.${ENDPOINT} --skip-ssl-validation
@@ -36,32 +49,176 @@ $ uaac member add cloud_controller.admin ${FIREHOSE_USER}
 $ uaac member add doppler.firehose ${FIREHOSE_USER}
 ```
 
-#### 3. Set environment variables in [manifest.yml](./manifest.yml)
+### Local Cloud Foundry Deployment
+
+#### Create a local Cloud Foundry environment
+
+You might want to work against a local Cloud Foundry instance by using
+[PCFDev](https://pivotal.io/pcf-dev). Once started, simply run the following
+commands:
+
 ```
-API_ADDR                  : The api URL of the CF environment
-DOPPLER_ADDR              : Loggregator's traffic controller URL
+$ export FIREHOSE_USER=hoseuser
+$ export FIREHOSE_USER_PASSWORD=hosepwd
+$ uaac target  https://uaa.local.pcfdev.io --skip-ssl-validation
+$ cf login --skip-ssl-validation -u admin -p admin
+$ uaac token client get admin -s admin-client-secret
+$ cf create-user ${FIREHOSE_USER} ${FIREHOSE_USER_PASSWORD}
+$ uaac member add cloud_controller.admin ${FIREHOSE_USER}
+$ uaac member add doppler.firehose ${FIREHOSE_USER}
+```
+
+## Get the nozzle
+
+```
+$ git clone https://github.com/humio/cloudfoundry2humio.git
+$ cd cloudfoundry2humio
+```
+
+## Fill environment variables in [manifest.yml](./manifest.yml)
+```
+API_ADDR                  : The api URL of the CF environment (e.g. https://api.local.pcfdev.io:443)
+DOPPLER_ADDR              : Loggregator's traffic controller URL (websocket) (e.g. wss://doppler.local.pcfdev.io:443)
 FIREHOSE_USER             : CF user who has admin and firehose access
 FIREHOSE_USER_PASSWORD    : Password of the CF user
-EVENT_FILTER              : Event types to be filtered out. The format is a comma separated list, valid event types are METRIC,LOG,HTTP
+HUMIO_HOST                : Address of the Humio ingester endpoint (e.g. https://go.humio.com:443)
+HUMIO_DATASPACE           : Name of the Humio dataspace to send events to
+HUMIO_INGEST_TOKEN        : Token for that particular dataspace
 SKIP_SSL_VALIDATION       : If true, allows insecure connections to the UAA and the Trafficcontroller
 CF_ENVIRONMENT            : Set to any string value for identifying logs and metrics from different CF environments
 IDLE_TIMEOUT              : Keep Alive duration for the firehose consumer
 LOG_LEVEL                 : Logging level of the nozzle, valid levels: DEBUG, INFO, ERROR
-LOG_EVENT_COUNT           : If true, the total count of events that the nozzle has received and sent will be logged to OMS Log Analytics as CounterEvents
-LOG_EVENT_COUNT_INTERVAL  : The time interval of logging event count to OMS Log Analytics
 ```
 
+## Deploy
 
-### 4. Push the app
+*WARNING:* Until this repository is public, you will need to vendor the local
+directory for the CF push to succeed. To achieve that, install
+[govendor](https://github.com/kardianos/govendor) and run the following command
+`govendor update +local +vendor`.
+
+Now that you have filled the `manifest.yml` file, run the following command:
+
 ```
 $ cf push
 ```
 
-## Test
+## Develop
 
-You need [ginkgo](https://github.com/onsi/ginkgo) to run the test.
-Run the following command to execute test:
+### Requirements
+
+Working on this code base requires:
+
+* [golang](https://golang.org/) >= 1.8
+* [govendor](https://github.com/kardianos/govendor): `go get -u github.com/kardianos/govendor`
+
+Ensure you have properly setup
+[golang](https://github.com/golang/go/wiki/GOPATH).
+
+### Pushing to Cloud Foundry
+
+As seen before, you can push the nozzle as follows
 
 ```
-$ ginkgo -r
+$ cf push
+```
+
+You need to ensure the package is properly vendored as well first:
+
+```
+$ govendor update +local +vendor
+```
+
+If you do not do that, the shipped nozzle will be the one without your changes.
+
+When working against Cloud Foundry, you may also enable more traces by
+exporting the following variable:
+
+```
+$ export CF_TRACE=true
+```
+
+This will trace all communication between your machine and the remote CF API
+endpoint.
+
+### Local Build
+
+You may build locally the nozzle for fast local development:
+
+```
+$ go build
+```
+
+which should generate the binary you can try locally:
+
+```
+./cloudfoundry2humio --api-addr https://api.local.pcfdev.io \
+    --doppler-addr wss://doppler.local.pcfdev.io:443 \
+    --firehose-user ${FIREHOSE_USER} \
+    --firehose-user-password ${FIREHOSE_USER_PASSWORD} \
+    --skip-ssl-validation \
+    --humio-host https://go.humio.com:443 \
+    --humio-dataspace Demo \
+    --humio-ingest-token XYZ \
+    --log-level DEBUG
+```
+
+You may enable more logging by setting:
+
+```
+export GOREQUEST_DEBUG=1
+```
+
+before running the command.
+
+### Run Local Tests
+
+In order to execute this project's tests locally you will need to execute the following
+commands to bring in a couple of test-only dependencies:
+
+```
+$ go get github.com/onsi/ginkgo
+$ go get github.com/onsi/gomega
+```
+
+You can now run the local tests for the project by executing the following 
+in the root of the project:
+
+```
+$ govendor test
+```
+
+## Release
+
+To release a new version of this nozzle and tile, first update the version in
+`main.go`.
+
+Then, update the CHANGELOG, tag and release.
+
+# The Humio Pivotal Cloud Foundry Tile
+
+Deploying a tile into your Cloud Foundry environment requires administrator
+permissons. As it also requires access to an Ops Manager, this cannot be tried
+against PCFDev at this time.
+
+You must install the
+[tile generator](https://github.com/cf-platform-eng/tile-generator) to be able
+to build this nozzle's tile.
+
+You can generate a new version of the tile:
+
+```
+$ cd tile
+$ bash build.sh
+```
+
+In order to
+[deploy](http://docs.pivotal.io/tiledev/pcf-command.html#deploy-tiles)
+this tile, create a
+[metadata file](cloudfoundry2humio-0.0.1.pivotal) and run the following
+command:
+
+```
+$ cd tile
+$ pcf import product/cloudfoundry2humio-X.Y.Z.pivotal
 ```

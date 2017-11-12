@@ -1,0 +1,84 @@
+---
+name: cloudfoundry2humio
+icon_file: resources/humio-owl.svg
+label: Cloud Foundry nozzle for Humio
+description: A Cloud Foundry nozzle to forwrad log messages and HTTP events to Humio
+org: system                             
+space: cloudfoundry2humio
+apply_open_security_group: true 
+
+packages:
+- name: cloudfoundry2humio
+  type: app
+  label: Humio Nozzle
+  pre_deploy: |
+    cf delete-org -f cloudfoundry2humio-org
+  manifest:
+    path: resources/humio-nozzle.zip
+    buildpack: https://github.com/cloudfoundry/go-buildpack.git
+    command: cloudfoundry2humio
+    memory: 256M
+    health_check: none
+
+forms:
+ - name: humio-nozzle-config-form
+   label: Humio Nozzle Config
+   description: Properties for Humio Nozzle
+   properties:
+   - name: HUMIO_HOST
+     type: string
+     label: Humio Endpoint
+     default: https://go.humio.com
+   - name: HUMIO_DATASPACE
+     type: string
+     label: Humio Dataspace
+   - name: HUMIO_INGEST_TOKEN
+     type: secret
+     label: Humio Token
+   - name: FIREHOSE_USER
+     type: string
+     label: Firehose Username
+     description: The CF user who has admin and firehose access
+   - name: FIREHOSE_USER_PASSWORD
+     type: secret
+     label: Firehose User Password
+     description: The password of the CF user who has admin and firehose access
+   - name: API_ADDR
+     type: string
+     label: Cloud Foundry API Address
+     description: e.g. https://api.local.pcfdev.io:443
+     constraints:
+     - must_match_regex: '^https://.*$'
+       error_message: 'This address starts with "https://"'
+   - name: DOPPLER_ADDR
+     type: string
+     label: Cloud Foundry Doppler Address
+     description: e.g. wss://doppler.local.pcfdev.io:443
+     constraints:
+     - must_match_regex: '^wss://.*$'
+       error_message: 'This address starts with "wss://"'
+   - name: CF_ENVIRONMENT
+     type: string
+     label: Cloud Foundry Environment
+     description: Label to identify logs and metrics from different CF environments
+     default: "cf"
+   - name: SKIP_SSL_VALIDATION
+     type: boolean 
+     label: Skip SSL Validation
+     default: false
+   - name: IDLE_TIMEOUT
+     type: string
+     description: Keep Alive Duration for Firehose Consumer
+     default: 60s
+     label: Idle Timeout
+   - name: LOG_LEVEL
+     type: dropdown_select
+     label: Log Level
+     description: The minimal log level of the nozzle
+     options:
+     - name: DEBUG
+       label: Debug
+     - name: INFO
+       label: Info
+     - name: ERROR
+       label: Error

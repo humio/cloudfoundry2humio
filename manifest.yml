@@ -1,21 +1,24 @@
 ---
 applications:
 - name: humio_nozzle
-  memory: 512M
+  memory: 64M
   instances: 2
   buildpack: https://github.com/cloudfoundry/go-buildpack.git
-  command: cf-firehose-to-humio
+  command: cloudfoundry2humio
   no-route: true
   health-check-type: none
   env:
-    FIREHOSE_USER: CHANGE_ME
-    FIREHOSE_USER_PASSWORD: CHANGE_ME
-    API_ADDR: https://api.<CF_SYSTEM_DOMAIN>
-    DOPPLER_ADDR: wss://doppler.<CF_SYSTEM_DOMAIN>:443
+    GOPACKAGENAME: humio/cloudfoundry2humio
+    FIREHOSE_USER: hoseuser
+    FIREHOSE_USER_PASSWORD: hosepwd
+    API_ADDR: https://api.local.pcfdev.io:443
+    DOPPLER_ADDR: wss://doppler.local.pcfdev.io:443
     SKIP_SSL_VALIDATION: true
     CF_ENVIRONMENT: "cf"
-    # EVENT_FILTER: "METRIC,HTTP" # Event types to be filtered out. The format is a comma separated list, valid event types are METRIC,LOG,HTTP
     IDLE_TIMEOUT: 60s
-    LOG_LEVEL: INFO # Valid log levels: DEBUG, INFO, ERROR
+    LOG_LEVEL: ERROR # Valid log levels: DEBUG, INFO, ERROR
     LOG_EVENT_COUNT: true
     LOG_EVENT_COUNT_INTERVAL: 60s
+    HUMIO_HOST: https://go.humio.com:443
+    HUMIO_DATASPACE: Demo # Needs to be a valid Humio data space for your account
+    HUMIO_INGEST_TOKEN: # Needs to be a valid Humio ingest token

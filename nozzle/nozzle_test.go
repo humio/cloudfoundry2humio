@@ -3,10 +3,9 @@ package nozzle_test
 import (
 	"time"
 
-	"code.cloudfoundry.org/lager"
-	"github.com/Humio/cf-firehose-to-humio/mocks"
-	"github.com/Humio/cf-firehose-to-humio/nozzle"
 	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/humio/cloudfoundry2humio/mocks"
+	"github.com/humio/cloudfoundry2humio/nozzle"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,6 +14,7 @@ var (
 	humioNozzle    *nozzle.HumioNozzle
 	nozzleConfig   *nozzle.NozzleConfig
 	firehoseClient *mocks.MockFirehoseClient
+	humioClient    *mocks.MockHumioClient
 	cachingClient  *mocks.MockCaching
 	logger         *mocks.MockLogger
 )
@@ -29,12 +29,12 @@ var _ = Describe("Humio nozzle", func() {
 		}
 		logger = mocks.NewMockLogger()
 		nozzleConfig = &nozzle.NozzleConfig{
-			ExcludeMetricEvents: false,
-			ExcludeLogEvents:    false,
-			ExcludeHttpEvents:   false,
+			HumioBatchTime:         5 * time.Millisecond,
+			HumioMaxMsgNumPerBatch: 1,
 		}
+		humioClient = mocks.NewMockHumioClient()
 
-		humioNozzle = nozzle.NewHumioNozzle(logger, firehoseClient, nozzleConfig, cachingClient)
+		humioNozzle = nozzle.NewHumioNozzle(logger, firehoseClient, nozzleConfig, humioClient, cachingClient)
 		go humioNozzle.Start()
 	})
 
@@ -42,8 +42,12 @@ var _ = Describe("Humio nozzle", func() {
 		eventType := events.Envelope_LogMessage
 		messageType := events.LogMessage_OUT
 
+		var t0 int64
+		t0 = 1 * 1000000000
+
 		logMessage := events.LogMessage{
 			MessageType: &messageType,
+			Timestamp:   &t0,
 		}
 
 		envelope := &events.Envelope{
@@ -53,16 +57,26 @@ var _ = Describe("Humio nozzle", func() {
 
 		firehoseClient.MessageChan <- envelope
 
-		msgJson := "[{\"EventType\":\"LogMessage\",\"Deployment\":\"\",\"Environment\":\"dev\",\"EventTime\":\"0001-01-01T00:00:00Z\",\"Job\":\"\",\"Index\":\"\",\"IP\":\"\",\"Tags\":\"\",\"NozzleInstance\":\"nozzle0\",\"MessageHash\":\"d396528c711f0053685aac71a95a9637\",\"Origin\":\"\",\"Message\":\"\",\"MessageType\":\"OUT\",\"Timestamp\":0,\"AppID\":\"\",\"ApplicationName\":\"\",\"SourceType\":\"\",\"SourceInstance\":\"\",\"SourceTypeKey\":\"-OUT\"}]"
-
+		msgJson := `{"tags":{},"events":[{"timestamp":"1970-01-01T01:00:00+01:00","attributes":{"eventtype":"LogMessage","timestamp":"1970-01-01T01:00:00+01:00","deployment":"","env":"dev","job":"","index":"","instance":"nozzle0","org":{},"space":{},"app":{},"http":{"starttimestamp":"","stoptimestamp":"","requestid":"","peertype":"","method":"","uri":"","remoteaddr":"","ua":"","statuscode":0,"contentlength":0,"instanceindex":0,"instanceid":"","forwarded":""},"log":{"message":"","messagetype":"OUT","timestamp":"1970-01-01T01:00:01+01:00","sourcetype":"","sourceinst":"","sourcetypekey":"-OUT"}}}]}`
+		Eventually(func() string {
+			return humioClient.GetLastPushedEvents()
+		}).Should(Equal(msgJson))
 	})
 
 	It("routes a HttpStartStop", func() {
 		eventType := events.Envelope_HttpStartStop
 		peerType := events.PeerType_Client
 
+		var t0 int64
+		t0 = 1 * 1000000000
+
+		var t1 int64
+		t1 = 2 * 1000000000
+
 		httpStartStop := events.HttpStartStop{
-			PeerType: &peerType,
+			PeerType:       &peerType,
+			StartTimestamp: &t0,
+			StopTimestamp:  &t1,
 		}
 
 		envelope := &events.Envelope{
@@ -72,125 +86,9 @@ var _ = Describe("Humio nozzle", func() {
 
 		firehoseClient.MessageChan <- envelope
 
-		msgJson := "[{\"EventType\":\"HttpStartStop\",\"Deployment\":\"\",\"Environment\":\"dev\",\"EventTime\":\"0001-01-01T00:00:00Z\",\"Job\":\"\",\"Index\":\"\",\"IP\":\"\",\"Tags\":\"\",\"NozzleInstance\":\"nozzle0\",\"MessageHash\":\"b7338b4f4c40613986590b7e4ec508a9\",\"SourceInstance\":\"\",\"Origin\":\"\",\"StartTimestamp\":0,\"StopTimestamp\":0,\"RequestID\":\"\",\"PeerType\":\"Client\",\"Method\":\"GET\",\"URI\":\"\",\"RemoteAddress\":\"\",\"UserAgent\":\"\",\"StatusCode\":0,\"ContentLength\":0,\"ApplicationID\":\"\",\"ApplicationName\":\"\",\"InstanceIndex\":0,\"InstanceID\":\"\",\"Forwarded\":\"\"}]"
-	})
-
-	It("routes an Error", func() {
-		eventType := events.Envelope_Error
-
-		envelope := &events.Envelope{
-			EventType: &eventType,
-			Error:     &events.Error{},
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		msgJson := "[{\"EventType\":\"Error\",\"Deployment\":\"\",\"Environment\":\"dev\",\"EventTime\":\"0001-01-01T00:00:00Z\",\"Job\":\"\",\"Index\":\"\",\"IP\":\"\",\"Tags\":\"\",\"NozzleInstance\":\"nozzle0\",\"MessageHash\":\"1aeb0d10b3411300c1ad275c668c581a\",\"SourceInstance\":\"\",\"Origin\":\"\",\"Source\":\"\",\"Code\":0,\"Message\":\"\"}]"
-
-	})
-
-	It("routes a ContainerMetric", func() {
-		eventType := events.Envelope_ContainerMetric
-
-		envelope := &events.Envelope{
-			EventType:       &eventType,
-			ContainerMetric: &events.ContainerMetric{},
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		msgJson := "[{\"EventType\":\"ContainerMetric\",\"Deployment\":\"\",\"Environment\":\"dev\",\"EventTime\":\"0001-01-01T00:00:00Z\",\"Job\":\"\",\"Index\":\"\",\"IP\":\"\",\"Tags\":\"\",\"NozzleInstance\":\"nozzle0\",\"MessageHash\":\"7a2415d07f1304f829a5b1fc1390aa1e\",\"SourceInstance\":\"\",\"Origin\":\"\",\"ApplicationID\":\"\",\"ApplicationName\":\"\",\"InstanceIndex\":0}]"
-
-	})
-
-	It("routes a CounterEvent", func() {
-		eventType := events.Envelope_CounterEvent
-
-		envelope := &events.Envelope{
-			EventType:    &eventType,
-			CounterEvent: &events.CounterEvent{},
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		msgJson := "[{\"EventType\":\"CounterEvent\",\"Deployment\":\"\",\"Environment\":\"dev\",\"EventTime\":\"0001-01-01T00:00:00Z\",\"Job\":\"\",\"Index\":\"\",\"IP\":\"\",\"Tags\":\"\",\"NozzleInstance\":\"nozzle0\",\"MessageHash\":\"5e28ff227b28d842fd7e08c0a764cf53\",\"SourceInstance\":\"\",\"Origin\":\"\",\"Name\":\"\",\"Delta\":0,\"Total\":0,\"CounterKey\":\"..\"}]"
-
-	})
-
-	It("routes a ValueMetric", func() {
-		eventType := events.Envelope_ValueMetric
-
-		envelope := &events.Envelope{
-			EventType:   &eventType,
-			ValueMetric: &events.ValueMetric{},
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		msgJson := "[{\"EventType\":\"ValueMetric\",\"Deployment\":\"\",\"Environment\":\"dev\",\"EventTime\":\"0001-01-01T00:00:00Z\",\"Job\":\"\",\"Index\":\"\",\"IP\":\"\",\"Tags\":\"\",\"NozzleInstance\":\"nozzle0\",\"MessageHash\":\"cc4acf2df16fb78148a274ddc04800ca\",\"SourceInstance\":\"\",\"Origin\":\"\",\"Name\":\"\",\"Value\":0,\"Unit\":\"\",\"MetricKey\":\"..\"}]"
-
-	})
-
-	It("logs for unrecognized events", func() {
-		eventType := events.Envelope_EventType(10)
-		envelope := &events.Envelope{
-			EventType: &eventType,
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		Eventually(func() []mocks.Log {
-			return logger.GetLogs(lager.INFO)
-		}).Should(Equal([]mocks.Log{mocks.Log{
-			Action: "uncategorized message",
-			Data:   []lager.Data{{"message": "eventType:10 "}},
-		}}))
-	})
-})
-
-var _ = Describe("LogEventCount", func() {
-
-	BeforeEach(func() {
-		firehoseClient = mocks.NewMockFirehoseClient()
-		cachingClient = &mocks.MockCaching{}
-		logger = mocks.NewMockLogger()
-		nozzleConfig = &nozzle.NozzleConfig{
-			ExcludeMetricEvents:   false,
-			ExcludeLogEvents:      false,
-			ExcludeHttpEvents:     false,
-			LogEventCount:         true,
-			LogEventCountInterval: time.Duration(10) * time.Millisecond,
-		}
-
-		humioNozzle = nozzle.NewHumioNozzle(logger, firehoseClient, nozzleConfig, cachingClient)
-		go humioNozzle.Start()
-	})
-
-	It("logs event count correctlty", func() {
-		eventType := events.Envelope_ValueMetric
-
-		envelope := &events.Envelope{
-			EventType:   &eventType,
-			ValueMetric: &events.ValueMetric{},
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		eventType = events.Envelope_LogMessage
-		messageType := events.LogMessage_OUT
-
-		logMessage := events.LogMessage{
-			MessageType: &messageType,
-		}
-
-		envelope = &events.Envelope{
-			EventType:  &eventType,
-			LogMessage: &logMessage,
-		}
-
-		firehoseClient.MessageChan <- envelope
-
-		regExp := "\"Total\":2,\"CounterKey\":\"nozzle.stats.eventsReceived\".*\"Total\":2,\"CounterKey\":\"nozzle.stats.eventsSent\""
-
+		msgJson := `{"tags":{},"events":[{"timestamp":"1970-01-01T01:00:00+01:00","attributes":{"eventtype":"HttpStartStop","timestamp":"1970-01-01T01:00:00+01:00","deployment":"","env":"dev","job":"","index":"","instance":"nozzle0","org":{},"space":{},"app":{},"http":{"starttimestamp":"1970-01-01T01:00:01+01:00","stoptimestamp":"1970-01-01T01:00:02+01:00","requestid":"","peertype":"Client","method":"GET","uri":"","remoteaddr":"","ua":"","statuscode":0,"contentlength":0,"instanceindex":0,"instanceid":"","forwarded":""},"log":{"message":"","messagetype":"","timestamp":"","sourcetype":"","sourceinst":"","sourcetypekey":""}}}]}`
+		Eventually(func() string {
+			return humioClient.GetLastPushedEvents()
+		}).Should(Equal(msgJson))
 	})
 })

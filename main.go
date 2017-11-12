@@ -1,41 +1,27 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"runtime/pprof"
 	"strings"
 	"syscall"
+	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/Humio/cf-firehose-to-humio/firehose"
 	"github.com/cloudfoundry-community/go-cfclient"
-	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/humio/cloudfoundry2humio/caching"
+	"github.com/humio/cloudfoundry2humio/humio"
+	"github.com/humio/cloudfoundry2humio/nozzle"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const (
 	firehoseSubscriptionID = "humio-nozzle"
-	// lower limit for override
-	minOMSPostTimeoutSeconds = 1
-	// upper limit for override
-	maxOMSPostTimeoutSeconds = 60
-	// upper limit of max message number per batch
-	ceilingMaxMsgNumPerBatch = 10000
-	// filter metrics
-	metricEventType = "METRIC"
-	// filter stdout/stderr events
-	logEventType = "LOG"
-	// filter http start/stop events
-	httpEventType = "HTTP"
-
-	version = "1.1.2"
+	version                = "0.1.0"
 )
 
-// Required parameters
 var (
-	//TODO: query info endpoint for URLs
 	apiAddress     = kingpin.Flag("api-addr", "Api URL").OverrideDefaultFromEnvar("API_ADDR").Required().String()
 	dopplerAddress = kingpin.Flag("doppler-addr", "Traffic controller URL").OverrideDefaultFromEnvar("DOPPLER_ADDR").Required().String()
 	cfUser         = kingpin.Flag("firehose-user", "CF user with admin and firehose access").OverrideDefaultFromEnvar("FIREHOSE_USER").Required().String()
@@ -48,7 +34,10 @@ var (
 	idleTimeout       = kingpin.Flag("idle-timeout", "Keep Alive duration for the firehose consumer").Default("25s").OverrideDefaultFromEnvar("IDLE_TIMEOUT").Duration()
 	logLevel          = kingpin.Flag("log-level", "Log level: DEBUG, INFO, ERROR").Default("INFO").OverrideDefaultFromEnvar("LOG_LEVEL").String()
 
-	excludeHttpEvents = false
+	// Humio endpoint info
+	humioHost        = kingpin.Flag("humio-host", "Humio host endpoint").OverrideDefaultFromEnvar("HUMIO_HOST").Required().String()
+	humioDataspace   = kingpin.Flag("humio-dataspace", "Humio dataspace to push logs to").OverrideDefaultFromEnvar("HUMIO_DATASPACE").Required().String()
+	humioIngestToken = kingpin.Flag("humio-ingest-token", "Humio ingest token").OverrideDefaultFromEnvar("HUMIO_INGEST_TOKEN").Required().String()
 )
 
 func main() {
@@ -70,51 +59,45 @@ func main() {
 	defer close(threadDumpChan)
 	go dumpGoRoutine(threadDumpChan)
 
-	logger.Info("config", lager.Data{"SKIP_SSL_VALIDATION": *skipSslValidation})
-	logger.Info("config", lager.Data{"IDLE_TIMEOUT": (*idleTimeout).String()})
-	logger.Info("config", lager.Data{"CF_ENVIRONMENT": *environment})
-	if len(*eventFilter) > 0 {
-		*eventFilter = strings.ToUpper(*eventFilter)
-		if strings.Contains(*eventFilter, httpEventType) {
-			excludeHttpEvents = true
-		}
-	} else {
-		logger.Info("config EVENT_FILTER is nil. all events will be published")
-	}
-
-	cfClientConfig := &cfclient.Config{
+	cachingCFClientConfig := &cfclient.Config{
 		ApiAddress:        *apiAddress,
 		Username:          *cfUser,
 		Password:          *cfPassword,
 		SkipSslValidation: *skipSslValidation,
 	}
 
-	firehoseConfig := &firehose.FirehoseConfig{
+	cachingClient := caching.NewCaching(cachingCFClientConfig, logger, *environment)
+
+	firehoseCFClientConfig := &cfclient.Config{
+		ApiAddress:        *apiAddress,
+		Username:          *cfUser,
+		Password:          *cfPassword,
+		SkipSslValidation: *skipSslValidation,
+	}
+
+	firehoseConfig := &nozzle.FirehoseConfig{
 		SubscriptionId:       firehoseSubscriptionID,
 		TrafficControllerUrl: *dopplerAddress,
 		IdleTimeout:          *idleTimeout,
 	}
 
-	firehoseClient := firehose.NewClient(cfClientConfig, firehoseConfig, logger)
+	firehoseClient := nozzle.NewFirehoseClient(firehoseCFClientConfig, firehoseConfig, logger)
 
-	//cachingClient := caching.NewCaching(cfClientConfig, logger, *environment)
-
-	var (
-		msgChan   <-chan *events.Envelope
-		errorChan <-chan error
-	)
-
-	msgChan, errorChan = firehoseClient.Connect()
-
-	go func() {
-		for err := range errorChan {
-			fmt.Fprintf(os.Stderr, "%v\n", err.Error())
-		}
-	}()
-
-	for msg := range msgChan {
-		fmt.Printf("%v \n", msg)
+	humioConfig := &humio.HumioConfig{
+		Host:      *humioHost,
+		Dataspace: *humioDataspace,
+		Token:     *humioIngestToken,
 	}
+
+	humioClient := humio.NewHumioClient(humioConfig, logger)
+
+	nozzleConfig := &nozzle.NozzleConfig{
+		HumioBatchTime:         5 * time.Second,
+		HumioMaxMsgNumPerBatch: 500,
+	}
+
+	nozzleApp := nozzle.NewHumioNozzle(logger, firehoseClient, nozzleConfig, humioClient, cachingClient)
+	nozzleApp.Start()
 }
 
 func registerGoRoutineDumpSignalChannel() chan os.Signal {

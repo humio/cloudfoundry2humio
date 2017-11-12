@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/Humio/cf-firehose-to-humio/caching"
+	"github.com/humio/cloudfoundry2humio/caching"
 )
 
 type MockCaching struct {
