@@ -5,6 +5,8 @@ This project contains two components:
 - A [Cloud Foundry](https://www.cloudfoundry.org/) [nozzle](https://docs.pivotal.io/tiledev/nozzle.html) for pushing logs to Humio
 - A [Cloud Foundry](https://www.cloudfoundry.org/) Tile so that Humio can be accessed from the Pivotal Marketplace
 
+For more on the design and layout of this project, see the accompanying [Design Overview](design.md) document.
+
 # Cloud Foundry Nozzle
 
 The [Cloud Foundry](https://www.cloudfoundry.org/)
