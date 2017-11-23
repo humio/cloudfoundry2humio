@@ -70,7 +70,7 @@ func (o *HumioNozzle) routeEvents() error {
 		case <-ticker.C:
 			currentEvents := pendingEvents
 			pendingEvents = make([]humio.Events, 0)
-			o.sendEvents(&currentEvents)
+			go o.sendEvents(&currentEvents)
 		case msg := <-o.msgChan:
 			var humioEvent = humio.NewEvent(msg, o.cachingClient)
 			if humioEvent != nil {
@@ -95,7 +95,7 @@ func (o *HumioNozzle) routeEvents() error {
 				if doPost {
 					currentEvents := pendingEvents
 					pendingEvents = make([]humio.Events, 0)
-					o.sendEvents(&currentEvents)
+					go o.sendEvents(&currentEvents)
 				}
 			}
 		case err := <-o.errChan:
@@ -106,7 +106,7 @@ func (o *HumioNozzle) routeEvents() error {
 				o.logSlowConsumerAlert()
 			}
 
-			o.sendEvents(&pendingEvents)
+			go o.sendEvents(&pendingEvents)
 
 			o.logger.Error("Closing connection with traffic controller", nil)
 			o.firehoseClient.CloseConsumer()
