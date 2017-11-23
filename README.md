@@ -56,7 +56,13 @@ $ uaac member add doppler.firehose ${FIREHOSE_USER}
 #### Create a local Cloud Foundry environment
 
 You might want to work against a local Cloud Foundry instance by using
-[PCFDev](https://pivotal.io/pcf-dev). Once started, simply run the following
+[PCFDev](https://pivotal.io/pcf-dev). Once installed, you can strt the PCFR local development environment using the following command:
+
+```
+$ cf dev start
+```
+
+Once the PCF development environment is started, run the following
 commands:
 
 ```
@@ -64,6 +70,28 @@ $ export FIREHOSE_USER=hoseuser
 $ export FIREHOSE_USER_PASSWORD=hosepwd
 $ uaac target  https://uaa.local.pcfdev.io --skip-ssl-validation
 $ cf login --skip-ssl-validation -u admin -p admin
+```
+
+You will then be prompted ... TBD
+
+cf login --skip-ssl-validation -u admin -p admin
+
+API endpoint> https://api.local.pcfdev.io
+Authenticating...
+OK
+
+Select an org (or press enter to skip):
+1. pcfdev-org
+2. system
+
+Org> 1
+Targeted org pcfdev-org
+
+Targeted space pcfdev-space
+
+
+
+```
 $ uaac token client get admin -s admin-client-secret
 $ cf create-user ${FIREHOSE_USER} ${FIREHOSE_USER_PASSWORD}
 $ uaac member add cloud_controller.admin ${FIREHOSE_USER}
@@ -96,10 +124,19 @@ LOG_LEVEL                 : Logging level of the nozzle, valid levels: DEBUG, IN
 
 *WARNING:* Until this repository is public, you will need to vendor the local
 directory for the CF push to succeed. To achieve that, install
-[govendor](https://github.com/kardianos/govendor) and run the following command
-`govendor update +local +vendor`.
+[govendor](https://github.com/kardianos/govendor) and run the following commands:
 
-Now that you have filled the `manifest.yml` file, run the following command:
+```
+$ govendor init
+$ govendor add +external
+$ govendor update +local +vendor
+```
+
+The first line creates the vendor directory. The second line will download all the dependencies
+into your `vendor` directory. The final command places the `cloudfoundry2humio` files into the
+`vendor` directory.
+
+You can now run the following command to push the application to PCF to begin receiving logs to Humio:
 
 ```
 $ cf push
@@ -164,6 +201,8 @@ which should generate the binary you can try locally:
     --humio-ingest-token XYZ \
     --log-level DEBUG
 ```
+
+./cloudfoundry2humio --api-addr https://api.local.pcfdev.io --doppler-addr wss://doppler.local.pcfdev.io:443 --firehose-user ${FIREHOSE_USER} --firehose-user-password ${FIREHOSE_USER_PASSWORD} --skip-ssl-validation --humio-host https://go.humio.com:443 --humio-dataspace testspace1 --humio-ingest-token yq1xhM77c3uyw80DlWOAT5jqs47HhE0KO2rTdDszG29e --log-level DEBUG
 
 You may enable more logging by setting:
 
