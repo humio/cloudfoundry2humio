@@ -88,7 +88,13 @@ func (c *Caching) GetAppInfo(appGuid string) AppInfo {
 			lager.Data{"guid": appGuid})
 		// call the client api to get the name for this app
 		// purposely create a new client due to issue in using a single client
-		cfClient, err := cfclient.NewClient(c.cfClientConfig)
+		cachingCFClientConfig := &cfclient.Config{
+			ApiAddress:        c.cfClientConfig.ApiAddress,
+			Username:          c.cfClientConfig.Username,
+			Password:          c.cfClientConfig.Password,
+			SkipSslValidation: c.cfClientConfig.SkipSslValidation,
+		}
+		cfClient, err := cfclient.NewClient(cachingCFClientConfig)
 		if err != nil {
 			c.logger.Error("error creating cfclient", err)
 			return AppInfo{
