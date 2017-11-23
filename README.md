@@ -122,20 +122,6 @@ LOG_LEVEL                 : Logging level of the nozzle, valid levels: DEBUG, IN
 
 ## Deploy
 
-*WARNING:* Until this repository is public, you will need to vendor the local
-directory for the CF push to succeed. To achieve that, install
-[govendor](https://github.com/kardianos/govendor) and run the following commands:
-
-```
-$ govendor init
-$ govendor add +external
-$ govendor update +local +vendor
-```
-
-The first line creates the vendor directory. The second line will download all the dependencies
-into your `vendor` directory. The final command places the `cloudfoundry2humio` files into the
-`vendor` directory.
-
 You can now run the following command to push the application to PCF to begin receiving logs to Humio:
 
 ```
