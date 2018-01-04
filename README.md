@@ -188,7 +188,7 @@ which should generate the binary you can try locally:
     --log-level DEBUG
 ```
 
-./cloudfoundry2humio --api-addr https://api.local.pcfdev.io --doppler-addr wss://doppler.local.pcfdev.io:443 --firehose-user ${FIREHOSE_USER} --firehose-user-password ${FIREHOSE_USER_PASSWORD} --skip-ssl-validation --humio-host https://go.humio.com:443 --humio-dataspace testspace1 --humio-ingest-token yq1xhM77c3uyw80DlWOAT5jqs47HhE0KO2rTdDszG29e --log-level DEBUG
+./cloudfoundry2humio --api-addr https://api.local.pcfdev.io --doppler-addr wss://doppler.local.pcfdev.io:443 --firehose-user ${FIREHOSE_USER} --firehose-user-password ${FIREHOSE_USER_PASSWORD} --skip-ssl-validation --humio-host https://go.humio.com:443 --humio-dataspace testspace1 --humio-ingest-token XYZ --log-level DEBUG
 
 You may enable more logging by setting:
 
