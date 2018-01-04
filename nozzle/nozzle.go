@@ -78,11 +78,8 @@ func (o *HumioNozzle) routeEvents() error {
 					Events: []humio.Event{*humioEvent},
 					Tags: humio.Tags{
 						AppID:     humioEvent.Attributes.App.ID,
-						AppName:   humioEvent.Attributes.App.Name,
 						SpaceID:   humioEvent.Attributes.Space.ID,
-						SpaceName: humioEvent.Attributes.Space.Name,
 						OrgID:     humioEvent.Attributes.Org.ID,
-						OrgName:   humioEvent.Attributes.Org.Name,
 					},
 				}
 

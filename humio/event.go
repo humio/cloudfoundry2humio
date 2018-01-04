@@ -10,11 +10,8 @@ import (
 )
 
 type Tags struct {
-	OrgName   string `json:"orgname,omitempty"`
 	OrgID     string `json:"orgid,omitempty"`
-	SpaceName string `json:"spacename,omitempty"`
 	SpaceID   string `json:"spaceid,omitempty"`
-	AppName   string `json:"appname,omitempty"`
 	AppID     string `json:"appid,omitempty"`
 }
 
