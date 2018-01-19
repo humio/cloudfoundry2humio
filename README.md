@@ -31,26 +31,6 @@ This nozzle requires your environment to have the following available:
 * the [CF cli](https://github.com/cloudfoundry/cli)
 * the [uaac cli](https://github.com/cloudfoundry/cf-uaac)
 
-### Production Cloud Foundry Deployment
-
-These instuctions work against a production Cloud Foundry deployment for which
-you must have administrative scope. If you do not have access to such an environment you can install [PCFDev](https://pivotal.io/pcf-dev) locally and follow the
-separate instructions below in this README that specifically work with [PCFDev](https://pivotal.io/pcf-dev).
-
-#### Setup a firehose user
-
-The nozzle requires a CF user who is authorized to access the loggregator
-firehose through the `doppler.firehose` scope. It is best to have a dedicated
-user for this access.
-
-```
-$ uaac target https://uaa.${ENDPOINT} --skip-ssl-validation
-$ uaac token client get admin
-$ cf create-user ${FIREHOSE_USER} ${FIREHOSE_USER_PASSWORD}
-$ uaac member add cloud_controller.admin ${FIREHOSE_USER}
-$ uaac member add doppler.firehose ${FIREHOSE_USER}
-```
-
 ### Local Cloud Foundry Deployment
 
 #### Create a local Cloud Foundry environment
