@@ -1,5 +1,7 @@
 # Cloud Foundry 2 Humio
 
+*NOTE*: _Please beware the tile has not yet been released to the Pivotal CloudFroundry (PCF) marketplace. If you are using PCF, please consider using the [Syslog over HTTP method](https://cloud.humio.com/docs/integrations/log-shippers/syslog/index.html)._ 
+
 This project contains two components:
 
 - A [Cloud Foundry](https://www.cloudfoundry.org/) [nozzle](https://docs.pivotal.io/tiledev/nozzle.html) for pushing logs to Humio
@@ -30,6 +32,26 @@ This nozzle requires your environment to have the following available:
 * an admin user on that environment
 * the [CF cli](https://github.com/cloudfoundry/cli)
 * the [uaac cli](https://github.com/cloudfoundry/cf-uaac)
+
+### Production Cloud Foundry Deployment
+
+These instuctions work against a production Cloud Foundry deployment for which
+you must have administrative scope. If you do not have access to such an environment you can install [PCFDev](https://pivotal.io/pcf-dev) locally and follow the
+separate instructions below in this README that specifically work with [PCFDev](https://pivotal.io/pcf-dev).
+
+#### Setup a firehose user
+
+The nozzle requires a CF user who is authorized to access the loggregator
+firehose through the `doppler.firehose` scope. It is best to have a dedicated
+user for this access.
+
+```
+$ uaac target https://uaa.${ENDPOINT} --skip-ssl-validation
+$ uaac token client get admin
+$ cf create-user ${FIREHOSE_USER} ${FIREHOSE_USER_PASSWORD}
+$ uaac member add cloud_controller.admin ${FIREHOSE_USER}
+$ uaac member add doppler.firehose ${FIREHOSE_USER}
+```
 
 ### Local Cloud Foundry Deployment
 
@@ -203,6 +225,8 @@ To release a new version of this nozzle and tile, first update the version in
 Then, update the CHANGELOG, tag and release.
 
 # The Humio Pivotal Cloud Foundry Tile
+
+_The tile is still under development and has not yet been released to Pivotal's marketplace_
 
 Deploying a tile into your Cloud Foundry environment requires administrator
 permissons. As it also requires access to an Ops Manager, this cannot be tried
